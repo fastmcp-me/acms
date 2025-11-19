@@ -26,3 +26,6 @@
 # v0.0.7
 - Refactored tools to follow Anthropic's pattern to optimize context use [here](https://www.anthropic.com/engineering/code-execution-with-mcp)
 - Update dependencies
+
+# v0.0.8
+- Make logs less verbose

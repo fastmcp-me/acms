@@ -6,13 +6,13 @@
     "url": "https://github.com/gattjoe/ACMS",
     "source": "github"
   },
-  "version": "0.0.7",
+  "version": "0.0.8",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "ACMS",
-      "version": "0.0.7",
+      "version": "0.0.8",
       "environmentVariables": [],
       "transport": {
         "type": "streamable-http",

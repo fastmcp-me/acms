@@ -85,8 +85,8 @@ mcp__acms__system_dns_list
 mcp__acms__system_dns_default
 mcp__acms__system_property_list (list all system properties)
 mcp__acms__system_property_get (get a specific property value)
-mcp__acms__system_property_set (set a property value)
-mcp__acms__system_property_clear (clear a property value)
+mcp__acms__system_property_set (set a property value, do not change build.rosetta)
+mcp__acms__system_property_clear (clear a property value, do not clear build.rosetta)
 ```
 **Note**: System property operations allow reading and managing container system configuration properties
 
@@ -120,10 +120,7 @@ Error: Input validation error: '["item-name"]' is not valid under any of the giv
 **If you see this**: The array parameter validation issues have returned
 
 #### Expected Errors (Normal Behavior)
-- Cannot delete running containers (must stop first)
-- Cannot delete system/default networks
-- Container exec fails on stopped containers
-- DNS domain creation may fail due to permissions
+None
 
 ### Test Execution Template
 
@@ -132,7 +129,7 @@ Error: Input validation error: '["item-name"]' is not valid under any of the giv
 
 ## Test Summary
 **Date**: [DATE]
-**Success Rate**: X/42 functions (Y%)
+**Success Rate**: X/39 functions (Y%)
 **Status**: [BREAKTHROUGH/REGRESSION/STABLE]
 
 ## System Environment
@@ -143,12 +140,12 @@ Error: Input validation error: '["item-name"]' is not valid under any of the giv
 ## Results by Category
 ### ✅ System Status: [X/3 functions]
 ### ✅ Image Operations: [X/5 functions]
-### ✅ Container Lifecycle: [X/5 functions]
+### ✅ Container Lifecycle: [X/7 functions]
 ### ✅ Container Interaction: [X/4 functions]
 ### ✅ Network Operations: [X/4 functions]
 ### ✅ Volume Operations: [X/4 functions]
-### ✅ Builder Operations: [X/4 functions]
-### ✅ System Operations: [X/3 functions]
+### ✅ Builder Operations: [X/5 functions]
+### ✅ System Operations: [X/7 functions]
 
 ## Key Findings
 - Array parameter validation: [WORKING/BROKEN]
@@ -164,7 +161,7 @@ Error: Input validation error: '["item-name"]' is not valid under any of the giv
 
 ### Save Results
 Always save comprehensive test results to:
-`/$HOME/code/github/acms/acms_comprehensive_test_results_[D].md`
+`/$HOME/code/ACMS/acms_comprehensive_test_results_[D].md`
 
 Where D is the date. Include:
 - Complete test results by category

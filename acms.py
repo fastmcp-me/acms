@@ -35,20 +35,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ACMS")
 
-# Set up more comprehensive logging for all relevant components - MAXIMUM VERBOSITY
-logging.getLogger("uvicorn").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.error").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.asgi").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.protocols").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.protocols.http").setLevel(logging.DEBUG)
-logging.getLogger("fastmcp").setLevel(logging.DEBUG)
-logging.getLogger("mcp").setLevel(logging.DEBUG)
-logging.getLogger("starlette").setLevel(logging.DEBUG)
-logging.getLogger("httpx").setLevel(logging.DEBUG)
-logging.getLogger("httpcore").setLevel(logging.DEBUG)
+# Set up logging levels - reduce noise from third-party libraries
+logging.getLogger("uvicorn").setLevel(logging.INFO)
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.error").setLevel(logging.INFO)
+logging.getLogger("uvicorn.asgi").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.protocols").setLevel(logging.WARNING)
+logging.getLogger("uvicorn.protocols.http").setLevel(logging.WARNING)
+logging.getLogger("fastmcp").setLevel(logging.INFO)
+logging.getLogger("mcp").setLevel(logging.INFO)
+logging.getLogger("mcp.server.lowlevel.server").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.streamable_http").setLevel(logging.WARNING)
+logging.getLogger("mcp.server.streamable_http_manager").setLevel(logging.INFO)
+logging.getLogger("starlette").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+logging.getLogger("asyncio").setLevel(logging.WARNING)
+logging.getLogger("sse_starlette").setLevel(logging.WARNING)
+logging.getLogger("sse_starlette.sse").setLevel(logging.WARNING)
 
-# Force all loggers to use our stderr handler
+# Force all loggers to use our stderr handler with consistent format
 for logger_name in [
     "uvicorn",
     "uvicorn.access",
@@ -58,7 +64,12 @@ for logger_name in [
     "uvicorn.protocols.http",
     "fastmcp",
     "mcp",
+    "mcp.server.lowlevel.server",
+    "mcp.server.streamable_http",
+    "mcp.server.streamable_http_manager",
     "starlette",
+    "sse_starlette",
+    "sse_starlette.sse",
 ]:
     specific_logger = logging.getLogger(logger_name)
     specific_logger.handlers.clear()
@@ -296,12 +307,12 @@ async def main() -> None:
         # Get the HTTP app
         app = mcp.http_app()
 
-        # Custom uvicorn config for maximum logging
+        # Uvicorn config with consistent logging
         config_kwargs = {
             "app": app,
             "host": host,
             "port": port,
-            "log_level": "debug",
+            "log_level": "info",
             "access_log": True,
             "use_colors": True,
             "loop": "asyncio",

@@ -6,7 +6,7 @@
 
 **ACMS** is a Model Context Protocol (MCP) server that provides programmatic access to Apple's container CLI tool on macOS. ACMS can be run locally or accessed remotely via HTTP/S.
 
-The point of ACMS is to bring attention to the [Containerization](https://github.com/apple/containerization) package and [cli](https://github.com/apple/container) efforts. Inspiration for ACMS came from [coderunner](https://github.com/instavm/coderunner).
+The point of ACMS is to bring attention to the [Containerization](https://github.com/apple/containerization) package and [Container cli](https://github.com/apple/container) efforts. Inspiration for ACMS came from [coderunner](https://github.com/instavm/coderunner).
 
 ## Features (as pitched by Claude)
 
