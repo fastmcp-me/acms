@@ -7,7 +7,7 @@ class TestArgumentValidation:
 
     def test_validate_container_arg_accepts_valid_strings(self):
         """Verify that valid arguments pass validation."""
-        from acms import _validate_container_arg
+        from tools._common.utils import _validate_container_arg
 
         valid_args = [
             "ubuntu",
@@ -24,7 +24,7 @@ class TestArgumentValidation:
 
     def test_validate_container_arg_rejects_dangerous_chars(self):
         """Verify that dangerous characters are rejected."""
-        from acms import _validate_container_arg
+        from tools._common.utils import _validate_container_arg
 
         dangerous_args = [
             "test;rm -rf /",
@@ -41,7 +41,7 @@ class TestArgumentValidation:
 
     def test_validate_container_arg_rejects_non_strings(self):
         """Verify that non-string arguments are rejected."""
-        from acms import _validate_container_arg
+        from tools._common.utils import _validate_container_arg
 
         with pytest.raises(ValueError, match="must be a string"):
             _validate_container_arg(123)
@@ -55,14 +55,14 @@ class TestArrayParameterValidation:
 
     def test_validate_array_accepts_none(self):
         """Verify None is accepted as valid."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         result = validate_array_parameter(None, "test_param")
         assert result is None
 
     def test_validate_array_accepts_string_list(self):
         """Verify lists of strings are accepted."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         input_list = ["item1", "item2", "item3"]
         result = validate_array_parameter(input_list, "test_param")
@@ -70,7 +70,7 @@ class TestArrayParameterValidation:
 
     def test_validate_array_accepts_json_string(self):
         """Verify JSON array strings are parsed correctly."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         json_str = '["item1", "item2", "item3"]'
         result = validate_array_parameter(json_str, "test_param")
@@ -78,21 +78,21 @@ class TestArrayParameterValidation:
 
     def test_validate_array_converts_single_string(self):
         """Verify single non-JSON strings are converted to list."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         result = validate_array_parameter("single-item", "test_param")
         assert result == ["single-item"]
 
     def test_validate_array_rejects_empty_list(self):
         """Verify empty arrays are rejected."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         with pytest.raises(ValueError, match="cannot be an empty array"):
             validate_array_parameter([], "test_param")
 
     def test_validate_array_rejects_mixed_types(self):
         """Verify lists with non-string elements are rejected."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         mixed_list = ["string", 123, "another"]
         with pytest.raises(ValueError, match="must be a list of strings"):
@@ -100,7 +100,7 @@ class TestArrayParameterValidation:
 
     def test_validate_array_rejects_invalid_json(self):
         """Verify invalid JSON objects are handled correctly."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         # JSON object instead of array
         json_obj = '{"key": "value"}'
@@ -113,7 +113,7 @@ class TestCommandResultFormatting:
 
     def test_format_successful_command_result(self):
         """Verify successful command results are formatted correctly."""
-        from acms import format_command_result
+        from tools._common.utils import format_command_result
 
         result = {
             "command": "container list",
@@ -129,7 +129,7 @@ class TestCommandResultFormatting:
 
     def test_format_failed_command_result(self):
         """Verify failed command results are formatted correctly."""
-        from acms import format_command_result
+        from tools._common.utils import format_command_result
 
         result = {
             "command": "container invalid",
@@ -145,7 +145,7 @@ class TestCommandResultFormatting:
 
     def test_format_command_result_with_both_outputs(self):
         """Verify command results with both stdout and stderr are formatted correctly."""
-        from acms import format_command_result
+        from tools._common.utils import format_command_result
 
         result = {
             "command": "container run ubuntu",
@@ -189,7 +189,7 @@ class TestRunContainerCommand:
     @pytest.mark.asyncio
     async def test_run_container_command_validation(self):
         """Verify command arguments are validated before execution."""
-        from acms import run_container_command
+        from tools._common.utils import run_container_command
 
         # Should raise ValueError for dangerous arguments
         with pytest.raises(ValueError, match="Invalid command argument"):
@@ -199,7 +199,7 @@ class TestRunContainerCommand:
     @patch("asyncio.create_subprocess_exec")
     async def test_run_container_command_success(self, mock_subprocess):
         """Verify successful command execution returns correct result."""
-        from acms import run_container_command
+        from tools._common.utils import run_container_command
 
         # Mock process
         mock_process = AsyncMock()
@@ -218,7 +218,7 @@ class TestRunContainerCommand:
     @patch("asyncio.create_subprocess_exec")
     async def test_run_container_command_failure(self, mock_subprocess):
         """Verify failed command execution returns correct result."""
-        from acms import run_container_command
+        from tools._common.utils import run_container_command
 
         # Mock process with error
         mock_process = AsyncMock()
@@ -337,7 +337,7 @@ class TestServerConfiguration:
 
     def test_command_result_type_alias(self):
         """Verify CommandResult type alias is defined."""
-        from acms import CommandResult
+        from tools._common.utils import CommandResult
 
         assert CommandResult is not None
 
@@ -349,7 +349,7 @@ class TestEdgeCases:
     @patch("asyncio.create_subprocess_exec")
     async def test_run_container_command_handles_unicode(self, mock_subprocess):
         """Verify command handles unicode output correctly."""
-        from acms import run_container_command
+        from tools._common.utils import run_container_command
 
         # Mock process with unicode output
         mock_process = AsyncMock()
@@ -367,7 +367,7 @@ class TestEdgeCases:
     @patch("asyncio.create_subprocess_exec")
     async def test_run_container_command_handles_invalid_utf8(self, mock_subprocess):
         """Verify command handles invalid UTF-8 gracefully."""
-        from acms import run_container_command
+        from tools._common.utils import run_container_command
 
         # Mock process with invalid UTF-8
         mock_process = AsyncMock()
@@ -381,7 +381,7 @@ class TestEdgeCases:
 
     def test_validate_array_parameter_edge_cases(self):
         """Test edge cases in array parameter validation."""
-        from acms import validate_array_parameter
+        from tools._common.utils import validate_array_parameter
 
         # Whitespace handling in JSON
         result = validate_array_parameter('  ["a", "b"]  ', "test")
@@ -393,7 +393,7 @@ class TestEdgeCases:
 
     def test_format_command_result_handles_missing_fields(self):
         """Verify formatter handles results with missing optional fields."""
-        from acms import format_command_result
+        from tools._common.utils import format_command_result
 
         minimal_result = {
             "command": "test",
