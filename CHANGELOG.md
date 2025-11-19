@@ -22,3 +22,7 @@
 # v0.0.6
 - Added smoke tests
 - Ran black and isort on acms.py
+
+# v0.0.7
+- Refactored tools to follow Anthropic's pattern to optimize context use [here](https://www.anthropic.com/engineering/code-execution-with-mcp)
+- Update dependencies
