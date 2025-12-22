@@ -17,11 +17,11 @@ TOOL_METADATA = {
 }
 
 
-async def acms_builder_status(json: bool = False) -> str:
+async def acms_builder_status(format: str = "table") -> str:
     """Show the current status of the BuildKit builder."""
     cmd_args = ["builder", "status"]
-    if json:
-        cmd_args.append("--json")
+    if format != "table":
+        cmd_args.extend(["--format", format])
 
     result = await run_container_command(*cmd_args)
     return format_command_result(result)

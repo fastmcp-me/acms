@@ -66,9 +66,9 @@ async def acms_container_exec(
 
         result = await run_container_command(*cmd_args)
         return format_command_result(result)
-    except ValueError as e:
-        logger.error(f"Parameter validation error in container_exec: {e}")
-        return f"Parameter validation error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Failed to execute command in container: {e}", exc_info=True)
+        raise
 
 
 def register(mcp) -> None:

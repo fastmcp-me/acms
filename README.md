@@ -8,13 +8,6 @@
 
 The point of ACMS is to bring attention to the [Containerization](https://github.com/apple/containerization) package and [Container cli](https://github.com/apple/container) efforts. Inspiration for ACMS came from [coderunner](https://github.com/instavm/coderunner).
 
-## Features (as pitched by Claude)
-
-- **50+ Container Operations** across 9 functional categories
-- **HTTP/WebSocket Transport** via FastMCP for modern connectivity
-- **Robust Parameter Validation** supporting JSON strings and native arrays
-- **Production-Ready** with 100% tested functionality
-
 ## Prerequisites
 
 - **Mac with Apple Silicon**
@@ -22,7 +15,6 @@ The point of ACMS is to bring attention to the [Containerization](https://github
 - **Xcode 26** - required to compile containerization
 - **Apple Containerization Framework** - (required for container functionality)
 - **Apple Container Cli** - installed and in PATH
-- **Python 3.8+** - with asyncio support
 
 ## Quick Start
 
@@ -32,11 +24,9 @@ Either clone the repository or `pip install acms` in a venv.
 
 ### Start Apple Container Services
 ```bash
-# Required for most operations
+
 container system start
 
-# Verify system status
-container system status
 ```
 
 ### Start ACMS Server
@@ -65,6 +55,8 @@ ACMS includes comprehensive end-to-end testing, just tell Claude to run the "ACM
 
 ## Security Considerations
 
-This is not secure, especially if you run it on a remote Mac OS endpoint on your home net.
+This is not secure, especially if you run it on a remote Mac OS endpoint on your home net. Also, you can lose your data when Claude tries to be helpful.
+
+![footgun](./images/footgun.png)
 
 mcp-name: io.github.gattjoe/ACMS

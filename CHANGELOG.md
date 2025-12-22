@@ -29,3 +29,7 @@
 
 # v0.0.8
 - Make logs less verbose
+
+# v0.0.9
+- Update tools to support container CLI 0.7.1
+- Update dependencies

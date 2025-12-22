@@ -42,9 +42,9 @@ async def acms_volume_inspect(names: List[str]) -> str:
 
         result = await run_container_command(*cmd_args)
         return format_command_result(result)
-    except ValueError as e:
-        logger.error(f"Parameter validation error in volume_inspect: {e}")
-        return f"Parameter validation error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Failed to inspect volume: {e}", exc_info=True)
+        raise
 
 
 def register(mcp) -> None:
