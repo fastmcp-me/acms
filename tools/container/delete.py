@@ -27,27 +27,36 @@ TOOL_METADATA = {
 
 
 async def acms_container_delete(containers: List[str], force: bool = False) -> str:
-    """Remove one or more containers."""
-    try:
-        # Validate containers parameter
-        validated_containers = validate_array_parameter(containers, "containers")
-        if not validated_containers:
-            raise ValueError(
-                "Parameter 'containers' is required and cannot be empty. "
-                "Provide at least one container name to delete."
-            )
+    """
+    Remove one or more containers.
 
-        cmd_args = ["rm"]
-        if force:
-            cmd_args.append("--force")
+    Args:
+        containers: List of container names or IDs to remove
+        force: Force removal of running containers
 
-        cmd_args.extend(validated_containers)
+    Returns:
+        Formatted command result
 
-        result = await run_container_command(*cmd_args)
-        return format_command_result(result)
-    except ValueError as e:
-        logger.error(f"Parameter validation error in container_delete: {e}")
-        return f"Parameter validation error: {str(e)}"
+    Raises:
+        ValueError: If containers parameter is invalid
+        RuntimeError: If container command fails
+    """
+    # Validate containers parameter - let exceptions propagate to FastMCP
+    validated_containers = validate_array_parameter(containers, "containers")
+    if not validated_containers:
+        raise ValueError(
+            "Parameter 'containers' is required and cannot be empty. "
+            "Provide at least one container name to delete."
+        )
+
+    cmd_args = ["rm"]
+    if force:
+        cmd_args.append("--force")
+
+    cmd_args.extend(validated_containers)
+
+    result = await run_container_command(*cmd_args)
+    return format_command_result(result)
 
 
 def register(mcp) -> None:

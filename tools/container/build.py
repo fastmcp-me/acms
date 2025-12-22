@@ -27,22 +27,29 @@ TOOL_METADATA = {
 
 
 async def acms_container_build(
-    path: str,
-    tag: Optional[str] = None,
+    path: str = ".",
+    tag: Optional[List[str]] = None,
     file: Optional[str] = None,
     build_arg: Optional[List[str]] = None,
     label: Optional[List[str]] = None,
     no_cache: bool = False,
     target: Optional[str] = None,
-    arch: str = "arm64",
-    os: str = "linux",
+    arch: Optional[str] = None,
+    os: Optional[str] = None,
+    platform: Optional[str] = None,
     cpus: float = 2.0,
     memory: str = "2048MB",
+    output: Optional[str] = None,
+    progress: str = "auto",
+    vsock_port: int = 8088,
     quiet: bool = False,
 ) -> str:
     """Build an OCI image from a local build context."""
     try:
         # Validate array parameters
+        validated_tag = (
+            validate_array_parameter(tag, "tag") if tag is not None else None
+        )
         validated_build_arg = (
             validate_array_parameter(build_arg, "build_arg") if build_arg is not None else None
         )
@@ -51,8 +58,9 @@ async def acms_container_build(
         )
 
         cmd_args = ["build"]
-        if tag:
-            cmd_args.extend(["--tag", tag])
+        if validated_tag:
+            for t in validated_tag:
+                cmd_args.extend(["--tag", t])
         if file:
             cmd_args.extend(["--file", file])
         if validated_build_arg:
@@ -65,23 +73,31 @@ async def acms_container_build(
             cmd_args.append("--no-cache")
         if target:
             cmd_args.extend(["--target", target])
-        if arch != "arm64":
+        if arch:
             cmd_args.extend(["--arch", arch])
-        if os != "linux":
+        if os:
             cmd_args.extend(["--os", os])
+        if platform:
+            cmd_args.extend(["--platform", platform])
         if cpus != 2.0:
             cmd_args.extend(["--cpus", str(cpus)])
         if memory != "2048MB":
             cmd_args.extend(["--memory", memory])
+        if output:
+            cmd_args.extend(["--output", output])
+        if progress != "auto":
+            cmd_args.extend(["--progress", progress])
+        if vsock_port != 8088:
+            cmd_args.extend(["--vsock-port", str(vsock_port)])
         if quiet:
             cmd_args.append("--quiet")
         cmd_args.append(path)
 
         result = await run_container_command(*cmd_args)
         return format_command_result(result)
-    except ValueError as e:
-        logger.error(f"Parameter validation error in container_build: {e}")
-        return f"Parameter validation error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Failed to build container: {e}", exc_info=True)
+        raise
 
 
 def register(mcp) -> None:

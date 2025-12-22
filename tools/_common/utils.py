@@ -1,14 +1,25 @@
 """
 Shared utilities for ACMS MCP tools.
 """
-from typing import TypeAlias, Optional, List, Dict, Any
+from typing import TypeAlias, Optional, List, Dict, Any, Set
 import asyncio
 import logging
 import json
+import os
+import time
 
 logger = logging.getLogger("ACMS")
 
 CommandResult: TypeAlias = Dict[str, Any]
+
+# Configuration from environment variables
+COMMAND_TIMEOUT = int(os.getenv("ACMS_COMMAND_TIMEOUT", "300"))  # 5 minutes default
+MAX_CONCURRENT_COMMANDS = int(os.getenv("ACMS_MAX_CONCURRENT", "10"))
+MAX_ARG_LENGTH = int(os.getenv("ACMS_MAX_ARG_LENGTH", "65536"))  # 64KB per argument
+
+# Concurrency control
+_command_semaphore = asyncio.Semaphore(MAX_CONCURRENT_COMMANDS)
+_active_processes: Set[asyncio.subprocess.Process] = set()
 
 
 def _validate_container_arg(arg: str) -> str:
@@ -22,10 +33,17 @@ def _validate_container_arg(arg: str) -> str:
         str: Validated argument
 
     Raises:
-        ValueError: If argument contains forbidden characters
+        ValueError: If argument contains forbidden characters or exceeds length limit
     """
     if not isinstance(arg, str):
         raise ValueError(f"Argument must be a string, got {type(arg).__name__}")
+
+    # Check argument length to prevent DoS via huge arguments
+    if len(arg) > MAX_ARG_LENGTH:
+        raise ValueError(
+            f"Argument exceeds maximum length of {MAX_ARG_LENGTH} characters "
+            f"(got {len(arg)} characters)"
+        )
 
     # Disallow dangerous characters that could be used for command injection
     forbidden_chars = [";", "|", "&", "$", "`", "\n", "\r", "\x00"]
@@ -40,18 +58,19 @@ def _validate_container_arg(arg: str) -> str:
     return arg
 
 
-async def run_container_command(*args: str) -> CommandResult:
+async def run_container_command(*args: str, timeout: Optional[int] = None) -> CommandResult:
     """
-    Execute a container command and return the result.
+    Execute a container command and return the result with timeout and concurrency control.
 
     Args:
         *args: Command arguments to pass to container CLI
+        timeout: Optional timeout in seconds (defaults to COMMAND_TIMEOUT env var)
 
     Returns:
-        Dict[str, Any]: Command execution result containing stdout, stderr, return_code, and command
+        Dict[str, Any]: Command execution result containing stdout, stderr, return_code, command, and duration
 
     Raises:
-        RuntimeError: If command execution fails
+        RuntimeError: If command execution fails or times out
         ValueError: If arguments contain forbidden characters
     """
     # Validate all arguments to prevent command injection
@@ -62,40 +81,80 @@ async def run_container_command(*args: str) -> CommandResult:
         raise ValueError(f"Invalid command argument: {e}")
 
     cmd = ["container"] + validated_args
-    logger.info(f"Executing: {' '.join(cmd)}")
+    timeout_value = timeout if timeout is not None else COMMAND_TIMEOUT
 
-    try:
-        process = await asyncio.create_subprocess_exec(
-            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    # Use semaphore to limit concurrent commands
+    async with _command_semaphore:
+        active_count = MAX_CONCURRENT_COMMANDS - _command_semaphore._value
+        logger.info(
+            f"Executing: {' '.join(cmd)} "
+            f"(active: {active_count}/{MAX_CONCURRENT_COMMANDS}, timeout: {timeout_value}s)"
         )
 
-        stdout, stderr = await process.communicate()
+        start_time = time.time()
+        process = None
 
-        stdout_text = stdout.decode("utf-8", errors="replace") if stdout else ""
-        stderr_text = stderr.decode("utf-8", errors="replace") if stderr else ""
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
 
-        result = {
-            "stdout": stdout_text,
-            "stderr": stderr_text,
-            "return_code": process.returncode,
-            "command": " ".join(cmd),
-        }
+            # Track active process for graceful shutdown
+            _active_processes.add(process)
 
-        # Log command completion with detailed results
-        if process.returncode == 0:
-            logger.info("Completed successfully (exit code: 0)")
-        else:
-            logger.warning(f"Failed with exit code: {process.returncode}")
-            if stderr_text:
-                logger.warning(f"Error output: {stderr_text.strip()}")
+            try:
+                # Execute with timeout
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=timeout_value
+                )
+            except asyncio.TimeoutError:
+                # Kill the process on timeout
+                logger.error(f"Command timed out after {timeout_value}s, killing process")
+                try:
+                    process.kill()
+                    await process.wait()
+                except Exception as kill_error:
+                    logger.error(f"Error killing timed out process: {kill_error}")
+                raise RuntimeError(
+                    f"Command timed out after {timeout_value}s: {' '.join(cmd)}"
+                )
 
-        return result
+            duration = time.time() - start_time
+            stdout_text = stdout.decode("utf-8", errors="replace") if stdout else ""
+            stderr_text = stderr.decode("utf-8", errors="replace") if stderr else ""
 
-    except Exception as e:
-        error_msg = f"Exception executing command '{' '.join(cmd)}': {e}"
-        logger.error(error_msg)
-        logger.error("Stack trace:", exc_info=True)
-        raise RuntimeError(f"Failed to execute command: {e}")
+            result = {
+                "stdout": stdout_text,
+                "stderr": stderr_text,
+                "return_code": process.returncode,
+                "command": " ".join(cmd),
+                "duration": duration,
+            }
+
+            # Log command completion with detailed results
+            if process.returncode == 0:
+                logger.info(f"Completed successfully in {duration:.2f}s (exit code: 0)")
+            else:
+                logger.warning(f"Failed with exit code: {process.returncode} after {duration:.2f}s")
+                if stderr_text:
+                    logger.warning(f"Error output: {stderr_text.strip()}")
+
+            return result
+
+        except asyncio.TimeoutError:
+            # Re-raise timeout errors
+            raise
+        except Exception as e:
+            duration = time.time() - start_time
+            error_msg = f"Exception executing command '{' '.join(cmd)}' after {duration:.2f}s: {e}"
+            logger.error(error_msg)
+            logger.error("Stack trace:", exc_info=True)
+            raise RuntimeError(f"Failed to execute command: {e}")
+        finally:
+            # Always remove from active processes set
+            if process is not None:
+                _active_processes.discard(process)
 
 
 def validate_array_parameter(param: Any, param_name: str) -> Optional[List[str]]:
@@ -202,3 +261,61 @@ def format_command_result(result: CommandResult) -> str:
     except Exception as e:
         logger.error(f"Error formatting command result: {e}")
         return f"Error formatting command result: {str(e)}"
+
+
+async def shutdown_gracefully(timeout: int = 30) -> None:
+    """
+    Wait for active commands to complete before shutdown.
+
+    Args:
+        timeout: Maximum seconds to wait for commands to complete
+
+    This function should be called during server shutdown to ensure
+    all in-flight container commands complete cleanly.
+    """
+    if _active_processes:
+        logger.info(
+            f"Graceful shutdown: waiting for {len(_active_processes)} active commands "
+            f"(timeout: {timeout}s)"
+        )
+        try:
+            # Wait for all active processes to complete
+            await asyncio.wait_for(
+                asyncio.gather(
+                    *[p.wait() for p in _active_processes],
+                    return_exceptions=True
+                ),
+                timeout=timeout
+            )
+            logger.info("All active commands completed successfully")
+        except asyncio.TimeoutError:
+            logger.warning(
+                f"Graceful shutdown timeout: {len(_active_processes)} commands still running. "
+                "Forcing termination..."
+            )
+            # Kill remaining processes
+            for process in _active_processes:
+                try:
+                    process.kill()
+                except Exception as e:
+                    logger.error(f"Error killing process during shutdown: {e}")
+        except Exception as e:
+            logger.error(f"Error during graceful shutdown: {e}")
+    else:
+        logger.info("Graceful shutdown: no active commands")
+
+
+def get_command_stats() -> Dict[str, Any]:
+    """
+    Get statistics about command execution.
+
+    Returns:
+        Dictionary with command execution statistics
+    """
+    return {
+        "active_processes": len(_active_processes),
+        "max_concurrent": MAX_CONCURRENT_COMMANDS,
+        "available_slots": _command_semaphore._value,
+        "command_timeout": COMMAND_TIMEOUT,
+        "max_arg_length": MAX_ARG_LENGTH,
+    }

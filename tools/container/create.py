@@ -38,6 +38,8 @@ async def acms_container_create(
     label: Optional[List[str]] = None,
     user: Optional[str] = None,
     entrypoint: Optional[str] = None,
+    ssh: bool = False,
+    platform: Optional[str] = None,
 ) -> str:
     """Create a new container from an image without starting it."""
     try:
@@ -84,6 +86,10 @@ async def acms_container_create(
             cmd_args.extend(["--user", user])
         if entrypoint:
             cmd_args.extend(["--entrypoint", entrypoint])
+        if ssh:
+            cmd_args.append("--ssh")
+        if platform:
+            cmd_args.extend(["--platform", platform])
 
         cmd_args.append(image)
         if validated_command:
@@ -91,9 +97,9 @@ async def acms_container_create(
 
         result = await run_container_command(*cmd_args)
         return format_command_result(result)
-    except ValueError as e:
-        logger.error(f"Parameter validation error in container_create: {e}")
-        return f"Parameter validation error: {str(e)}"
+    except Exception as e:
+        logger.error(f"Failed to create container: {e}", exc_info=True)
+        raise
 
 
 def register(mcp) -> None:

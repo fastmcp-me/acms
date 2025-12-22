@@ -28,7 +28,7 @@ load_dotenv()
 
 # Configure enhanced logging to stderr to avoid interfering with stdio communication
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - [PID:%(process)d] [%(funcName)s:%(lineno)d] - %(message)s",
     stream=sys.stderr,
     force=True,  # Ensure our config overrides any existing config
